@@ -12,4 +12,5 @@ node_modules/
 .DS_Store
 
 # Database
-applications.db
+backend/applications.db
+backend/email_debug.json
