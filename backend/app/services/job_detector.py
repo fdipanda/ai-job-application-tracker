@@ -1,6 +1,3 @@
-import email
-
-
 JOB_KEYWORDS = [
     "application",
     "interview",
@@ -10,7 +7,7 @@ JOB_KEYWORDS = [
     "career",
     "talent",
     "position",
-    "thank you for applying"
+    "thank you for applying",
 ]
 
 NEGATIVE_KEYWORDS = [
@@ -24,7 +21,18 @@ NEGATIVE_KEYWORDS = [
     "account",
     "subscription",
     "newsletter",
-    "promotion"
+    "promotion",
+]
+
+CONSULTING_ADMIN_SIGNALS = [
+    "timesheet",
+    "week ending",
+    "submitted hours",
+    "approved hours",
+    "payroll",
+    "expense report",
+    "invoice submission",
+    "billing",
 ]
 
 BLOCKED_SENDERS = [
@@ -33,7 +41,7 @@ BLOCKED_SENDERS = [
     "jobs-listings@linkedin.com",
     "notifications@ripplematch.com",
     "glassdoor.com",
-    "indeed.com"
+    "indeed.com",
 ]
 
 APPLICATION_SIGNALS = [
@@ -45,41 +53,62 @@ APPLICATION_SIGNALS = [
     "confirm that your application",
 ]
 
-def is_job_email(email):
-    
 
-
+def classify_job_email(email):
     sender = email.get("sender", "").lower()
 
-    # 1️⃣ Block known job newsletters
     for blocked in BLOCKED_SENDERS:
         if blocked in sender:
-            return False
-
+            return {
+                "is_job_email": False,
+                "stage": "filtered",
+                "reason": f"blocked_sender:{blocked}",
+            }
 
     text = (
-        email.get("subject","") +
-        email.get("preview","") +
-        email.get("body","")
+        email.get("subject", "") +
+        email.get("preview", "") +
+        email.get("body", "")
     ).lower()
 
+    for phrase in CONSULTING_ADMIN_SIGNALS:
+        if phrase in text:
+            return {
+                "is_job_email": False,
+                "stage": "filtered",
+                "reason": f"consulting_admin:{phrase}",
+            }
 
-    # 2️⃣ Negative signals
     for phrase in NEGATIVE_KEYWORDS:
         if phrase in text:
-            return False
+            return {
+                "is_job_email": False,
+                "stage": "filtered",
+                "reason": f"negative_signal:{phrase}",
+            }
 
-
-    # 3️⃣ Strong application signals
     for phrase in APPLICATION_SIGNALS:
         if phrase in text:
-            return True
+            return {
+                "is_job_email": True,
+                "stage": "candidate",
+                "reason": f"application_signal:{phrase}",
+            }
 
-
-    # 4️⃣ Weak signals (job keywords)
     for keyword in JOB_KEYWORDS:
         if keyword in text:
-            return True
+            return {
+                "is_job_email": True,
+                "stage": "candidate",
+                "reason": f"job_keyword:{keyword}",
+            }
+
+    return {
+        "is_job_email": False,
+        "stage": "filtered",
+        "reason": "no_job_signal",
+    }
 
 
-    return False
+def is_job_email(email):
+    return classify_job_email(email)["is_job_email"]

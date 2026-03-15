@@ -1,0 +1,844 @@
+%PDF-1.4
+%����
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Length 959 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+(AI Job Application Tracker - Mentor Walkthrough) Tj
+T*
+(body {) Tj
+T*
+(font-family: "Avenir Next", "Helvetica Neue", Arial, sans-serif;) Tj
+T*
+(line-height: 1.45;) Tj
+T*
+(color: #1f2937;) Tj
+T*
+(margin: 40px;) Tj
+T*
+(max-width: 900px;) Tj
+T*
+(}) Tj
+T*
+() Tj
+T*
+(h1, h2, h3 {) Tj
+T*
+(color: #0f172a;) Tj
+T*
+(}) Tj
+T*
+() Tj
+T*
+(h1 {) Tj
+T*
+(font-size: 28px;) Tj
+T*
+(margin-bottom: 8px;) Tj
+T*
+(}) Tj
+T*
+() Tj
+T*
+(h2 {) Tj
+T*
+(font-size: 20px;) Tj
+T*
+(margin-top: 28px;) Tj
+T*
+(border-bottom: 1px solid #d1d5db;) Tj
+T*
+(padding-bottom: 6px;) Tj
+T*
+(}) Tj
+T*
+() Tj
+T*
+(h3 {) Tj
+T*
+(font-size: 16px;) Tj
+T*
+(margin-top: 18px;) Tj
+T*
+(margin-bottom: 6px;) Tj
+T*
+(}) Tj
+T*
+() Tj
+T*
+(p {) Tj
+T*
+(margin: 10px 0;) Tj
+T*
+(}) Tj
+T*
+() Tj
+T*
+(ul {) Tj
+T*
+(margin: 8px 0 12px 24px;) Tj
+T*
+(}) Tj
+T*
+() Tj
+T*
+(li {) Tj
+T*
+(margin: 4px 0;) Tj
+T*
+(}) Tj
+T*
+() Tj
+T*
+(code {) Tj
+T*
+(font-family: "SFMono-Regular", Menlo, monospace;) Tj
+ET
+endstream
+endobj
+3 0 obj
+<< /Type /Page /Parent 18 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 2 0 R >>
+endobj
+4 0 obj
+<< /Length 1661 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+(background: #f3f4f6;) Tj
+T*
+(padding: 1px 4px;) Tj
+T*
+(border-radius: 4px;) Tj
+T*
+(}) Tj
+T*
+() Tj
+T*
+(.intro {) Tj
+T*
+(color: #475569;) Tj
+T*
+(margin-bottom: 20px;) Tj
+T*
+(}) Tj
+T*
+() Tj
+T*
+(AI Job Application Tracker) Tj
+T*
+() Tj
+T*
+(Mentor walkthrough of the project for a senior Computer Science student with an AI) Tj
+T*
+(concentration.) Tj
+T*
+() Tj
+T*
+(1. Project Overview) Tj
+T*
+() Tj
+T*
+(This project is a full-stack job application tracker with two input paths: manual entry) Tj
+T*
+(and automatic extraction from Outlook email. The goal is to keep a single source of) Tj
+T*
+(truth for applications and reduce the manual work of updating statuses as recruiters and) Tj
+T*
+(ATS systems send messages.) Tj
+T*
+() Tj
+T*
+(At a high level, the architecture is:) Tj
+T*
+() Tj
+T*
+(• React/Next.js frontend for the dashboard UI) Tj
+T*
+() Tj
+T*
+(• FastAPI backend for REST endpoints and email ingestion) Tj
+T*
+() Tj
+T*
+(• SQLite database for persistence) Tj
+T*
+() Tj
+T*
+(• Microsoft Graph API for reading Outlook mail) Tj
+T*
+() Tj
+T*
+(• OpenAI plus regex parsing for extracting job details from emails) Tj
+T*
+() Tj
+T*
+(The runtime flow is:) Tj
+T*
+() Tj
+T*
+(• The frontend loads the dashboard from frontend/src/app/page.tsx.) Tj
+T*
+() Tj
+T*
+(• It calls the backend through frontend/src/lib/api.ts.) Tj
+T*
+() Tj
+T*
+(• The backend starts in backend/app/main.py, mounts CRUD routes from) Tj
+T*
+(    backend/app/routes.py, and creates tables from models in backend/app/models.py.) Tj
+T*
+() Tj
+T*
+(• Application records are stored in SQLite using SQLAlchemy configured in) Tj
+T*
+(    backend/app/database.py.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 18 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 2202 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+() Tj
+T*
+(• If email sync is triggered, the backend authenticates with Microsoft, fetches) Tj
+T*
+(    messages, filters likely job mail, parses details, deduplicates by a generated) Tj
+T*
+(    job_key, then inserts or updates rows.) Tj
+T*
+() Tj
+T*
+(The code is organized around layers:) Tj
+T*
+() Tj
+T*
+(• API layer: main.py, routes.py) Tj
+T*
+() Tj
+T*
+(• Data layer: database.py, models.py, schemas.py) Tj
+T*
+() Tj
+T*
+(• Business logic: services/application_service.py) Tj
+T*
+() Tj
+T*
+(• Email pipeline: email_service.py, job_detector.py, ai_email_parser.py,) Tj
+T*
+(    email_parser.py, email_classifier.py) Tj
+T*
+() Tj
+T*
+(2. Technology Breakdown) Tj
+T*
+() Tj
+T*
+(• Python: backend language. Good for APIs, automation, AI integrations, and quick) Tj
+T*
+(    iteration. Trade-off: not as strong as C# for compile-time guarantees.) Tj
+T*
+() Tj
+T*
+(• FastAPI: modern Python web framework. It gives route definitions, validation, JSON) Tj
+T*
+(    serialization, and auto docs with little boilerplate. Trade-off: smaller) Tj
+T*
+(    batteries-included ecosystem than Django.) Tj
+T*
+() Tj
+T*
+(• React plus Next.js: frontend stack. React handles component-based UI; Next.js) Tj
+T*
+(    provides project structure, bundling, dev server, and deployment-friendly) Tj
+T*
+(    conventions. Trade-off: more JavaScript ecosystem complexity.) Tj
+T*
+() Tj
+T*
+(• TypeScript: adds static typing to frontend code. Useful for reducing UI and API) Tj
+T*
+(    mismatch bugs.) Tj
+T*
+() Tj
+T*
+(• SQLite: embedded relational database stored in a file. Perfect for a small local) Tj
+T*
+(    app with simple deployment. Trade-off: limited concurrency and horizontal) Tj
+T*
+(    scaling.) Tj
+T*
+() Tj
+T*
+(• SQLAlchemy: ORM for Python. It maps classes to database tables and hides a lot of) Tj
+T*
+(    raw SQL. Trade-off: abstraction can make debugging generated queries harder.) Tj
+T*
+() Tj
+T*
+(• REST APIs: the frontend talks to the backend over HTTP using JSON. Simple and) Tj
+T*
+(    standard for web apps.) Tj
+T*
+() Tj
+T*
+(• Microsoft Graph API: lets the app read Outlook messages after OAuth login. This is) Tj
+T*
+(    how email ingestion works.) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 18 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 2206 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+(• OAuth plus MSAL: handles Microsoft sign-in and access tokens. Important because) Tj
+T*
+(    the app should never directly handle your Microsoft password.) Tj
+T*
+() Tj
+T*
+(• OpenAI API: used in backend/app/services/ai_email_parser.py to extract company,) Tj
+T*
+(    role, location, and status from messy email text.) Tj
+T*
+() Tj
+T*
+(• Bash and terminal tools: used for setup, running servers, tests, and dependency) Tj
+T*
+(    management.) Tj
+T*
+() Tj
+T*
+(• Git: version control for tracking changes and collaborating safely.) Tj
+T*
+() Tj
+T*
+(3. Key Design Decisions) Tj
+T*
+() Tj
+T*
+(• Python backend: likely chosen because this project mixes API work, text parsing,) Tj
+T*
+(    and AI integration. Python is especially strong there.) Tj
+T*
+() Tj
+T*
+(• FastAPI over Flask or Django: FastAPI gives cleaner typing and validation than) Tj
+T*
+(    Flask, while staying lighter than Django. Good middle ground.) Tj
+T*
+() Tj
+T*
+(• React and Next.js frontend: strong ecosystem, reusable components, and industry) Tj
+T*
+(    relevance. It also teaches modern frontend patterns.) Tj
+T*
+() Tj
+T*
+(• SQLite over PostgreSQL or MySQL: fastest way to get persistence without running a) Tj
+T*
+(    separate database server.) Tj
+T*
+() Tj
+T*
+(• SQLAlchemy ORM: helpful because the app has structured relational data but still) Tj
+T*
+(    benefits from Python objects and query abstraction.) Tj
+T*
+() Tj
+T*
+(• Service-layer business logic: routes stay thin, while logic lives in services like) Tj
+T*
+(    backend/app/services/application_service.py. That is a good maintainability) Tj
+T*
+(    choice.) Tj
+T*
+() Tj
+T*
+(• Terminal-heavy workflow: common because it is scriptable, reproducible, fast, and) Tj
+T*
+(    works the same on local machines and servers.) Tj
+T*
+() Tj
+T*
+(4. Alternative Implementations) Tj
+T*
+() Tj
+T*
+(Backend alternatives) Tj
+T*
+() Tj
+T*
+(• C#: you would likely use ASP.NET Core plus Entity Framework. Strong typing,) Tj
+T*
+(    excellent tooling, great for larger enterprise systems.) Tj
+T*
+() Tj
+T*
+(• Java: probably Spring Boot plus JPA or Hibernate. Very production-proven, but) Tj
+T*
+(    heavier and more verbose.) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 18 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 1895 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+(• Node.js: Express or NestJS would keep frontend and backend both in JavaScript or) Tj
+T*
+(    TypeScript. Nice stack consistency, but less pleasant for some data and AI) Tj
+T*
+(    tasks.) Tj
+T*
+() Tj
+T*
+(• Go: simpler deployment and strong performance, but less ergonomic for rapid AI or) Tj
+T*
+(    text-processing work.) Tj
+T*
+() Tj
+T*
+(Frontend alternatives) Tj
+T*
+() Tj
+T*
+(• Angular: more opinionated, bigger framework, great structure, steeper learning) Tj
+T*
+(    curve.) Tj
+T*
+() Tj
+T*
+(• Vue: often easier to learn than React, very productive for small and medium apps.) Tj
+T*
+() Tj
+T*
+(• Svelte: very clean developer experience, less ecosystem depth than React.) Tj
+T*
+() Tj
+T*
+(• Server-rendered HTML: simpler for small apps, but less dynamic for an interactive) Tj
+T*
+(    dashboard.) Tj
+T*
+() Tj
+T*
+(Database alternatives) Tj
+T*
+() Tj
+T*
+(• PostgreSQL: best next step for production. Better concurrency, indexing,) Tj
+T*
+(    extensions, and reliability.) Tj
+T*
+() Tj
+T*
+(• MySQL: similar category, widely used.) Tj
+T*
+() Tj
+T*
+(• MongoDB: useful if the data were document-shaped and schema-flexible, less ideal) Tj
+T*
+(    here because applications fit relational structure well.) Tj
+T*
+() Tj
+T*
+(• Redis: not a primary database here; better as a cache or queue helper.) Tj
+T*
+() Tj
+T*
+(ORM alternatives) Tj
+T*
+() Tj
+T*
+(• Raw SQL: maximum control, more manual work.) Tj
+T*
+() Tj
+T*
+(• Prisma: common in TypeScript ecosystems, not Python.) Tj
+T*
+() Tj
+T*
+(• Django ORM: excellent if the backend were Django.) Tj
+T*
+() Tj
+T*
+(• Entity Framework: the closest C# analogy to SQLAlchemy.) Tj
+T*
+() Tj
+T*
+(ORMs exist because they map tables to objects, reduce repetitive SQL boilerplate,) Tj
+T*
+(centralize schema logic, and improve developer speed for common CRUD tasks.) Tj
+T*
+() Tj
+T*
+(5. Development Workflow) Tj
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 18 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Length 1737 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+() Tj
+T*
+(Typical local workflow:) Tj
+T*
+() Tj
+T*
+(• Backend setup: cd backend, create a virtual environment, pip install -r) Tj
+T*
+(    requirements.txt, run uvicorn app.main:app --reload) Tj
+T*
+() Tj
+T*
+(• Frontend setup: cd frontend, npm install, npm run dev) Tj
+T*
+() Tj
+T*
+(• Tests: ./venv/bin/pytest -q) Tj
+T*
+() Tj
+T*
+(Why terminal workflows matter:) Tj
+T*
+() Tj
+T*
+(• They are fast once learned) Tj
+T*
+() Tj
+T*
+(• They can be automated in scripts and CI) Tj
+T*
+() Tj
+T*
+(• They work consistently across local, server, and cloud environments) Tj
+T*
+() Tj
+T*
+(• They expose the real commands that build and run software) Tj
+T*
+() Tj
+T*
+(Compared to GUI tools, the terminal has a steeper learning curve, but much more) Tj
+T*
+(automation power.) Tj
+T*
+() Tj
+T*
+(6. What Could Be Improved) Tj
+T*
+() Tj
+T*
+(• Auth persistence and security: access tokens are stored in process memory and in) Tj
+T*
+(    SQLite, which is convenient but not ideal for production.) Tj
+T*
+() Tj
+T*
+(• Pydantic v2 cleanup: tests show deprecated dict\(\) and orm_mode usage.) Tj
+T*
+() Tj
+T*
+(• Better validation: statuses and input fields could be more strictly constrained.) Tj
+T*
+() Tj
+T*
+(• Logging and observability: current logging is basic and local-file oriented.) Tj
+T*
+() Tj
+T*
+(• Background jobs: email sync currently runs inline in request handlers.) Tj
+T*
+() Tj
+T*
+(• More tests: backend is well covered, but frontend tests are missing.) Tj
+T*
+() Tj
+T*
+(• Config separation: environment-specific config could be cleaner.) Tj
+T*
+() Tj
+T*
+(7. Scaling the System) Tj
+T*
+() Tj
+T*
+(If this needed thousands or millions of users:) Tj
+T*
+() Tj
+T*
+(• Replace SQLite with PostgreSQL) Tj
+ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 18 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 12 0 R >>
+endobj
+14 0 obj
+<< /Length 1498 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+() Tj
+T*
+(• Put backend and frontend in containers with Docker) Tj
+T*
+() Tj
+T*
+(• Deploy behind load balancers) Tj
+T*
+() Tj
+T*
+(• Move email sync to background workers) Tj
+T*
+() Tj
+T*
+(• Add a queue like RabbitMQ, SQS, or Redis-based workers) Tj
+T*
+() Tj
+T*
+(• Store secrets in a proper secret manager) Tj
+T*
+() Tj
+T*
+(• Use caching for expensive reads) Tj
+T*
+() Tj
+T*
+(• Add CI/CD pipelines) Tj
+T*
+() Tj
+T*
+(• Consider splitting services only if the monolith becomes a bottleneck) Tj
+T*
+() Tj
+T*
+(Right now this is a good small monolith. At scale, the ingestion pipeline is the first) Tj
+T*
+(thing I would separate operationally.) Tj
+T*
+() Tj
+T*
+(8. Industry Best Practices) Tj
+T*
+() Tj
+T*
+(A production-grade version would usually include:) Tj
+T*
+() Tj
+T*
+(• Unit, integration, and frontend tests) Tj
+T*
+() Tj
+T*
+(• Pull requests and code review) Tj
+T*
+() Tj
+T*
+(• Linting, formatting, and type checks in CI) Tj
+T*
+() Tj
+T*
+(• Structured logs, metrics, and tracing) Tj
+T*
+() Tj
+T*
+(• Secret management with cloud tools, not only .env) Tj
+T*
+() Tj
+T*
+(• Staging and production environments) Tj
+T*
+() Tj
+T*
+(• Safer auth and session handling) Tj
+T*
+() Tj
+T*
+(• Migrations for schema changes instead of implicit table creation) Tj
+T*
+() Tj
+T*
+(9. Mini Practice Projects) Tj
+T*
+() Tj
+T*
+(• Build one FastAPI endpoint that returns a list of books. Teaches routing, JSON) Tj
+T*
+(    responses, and request handling.) Tj
+T*
+() Tj
+ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 18 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 14 0 R >>
+endobj
+16 0 obj
+<< /Length 1751 >>
+stream
+BT
+/F1 11 Tf
+1 0 0 1 54 738 Tm
+15 TL
+(• Build one React component with a search box filtering a list. Teaches state,) Tj
+T*
+(    props, and rendering.) Tj
+T*
+() Tj
+T*
+(• Build a tiny Python script that inserts and reads rows from SQLite. Teaches) Tj
+T*
+(    persistence basics.) Tj
+T*
+() Tj
+T*
+(• Write a bash script that starts backend and frontend dev servers. Teaches terminal) Tj
+T*
+(    automation.) Tj
+T*
+() Tj
+T*
+(• Call a public REST API from Python or JavaScript and display the result. Teaches) Tj
+T*
+(    HTTP, JSON, and async flow.) Tj
+T*
+() Tj
+T*
+(10. Using AI Tools for Development) Tj
+T*
+() Tj
+T*
+(AI tools can help a lot if used intentionally:) Tj
+T*
+() Tj
+T*
+(• ChatGPT or Codex: good for explaining unfamiliar files, generating starter code,) Tj
+T*
+(    and comparing architecture options) Tj
+T*
+() Tj
+T*
+(• Cursor or Copilot: great for inline code completion and refactors) Tj
+T*
+() Tj
+T*
+(• Agents: useful for repetitive tasks like wiring CRUD or writing tests) Tj
+T*
+() Tj
+T*
+(Good prompts are specific:) Tj
+T*
+() Tj
+T*
+(• Explain this file as if I know C# but not FastAPI) Tj
+T*
+() Tj
+T*
+(• Trace the data flow from this button click to the database) Tj
+T*
+() Tj
+T*
+(• Write tests for this service and explain the edge cases) Tj
+T*
+() Tj
+T*
+(• Compare this SQLAlchemy model to the Entity Framework equivalent) Tj
+T*
+() Tj
+T*
+(Best practice is to use AI to accelerate understanding and drafting, verify important) Tj
+T*
+(code paths yourself, ask it to explain trade-offs, and treat it like a strong junior) Tj
+T*
+(pair programmer rather than an infallible architect.) Tj
+T*
+() Tj
+T*
+(Verification Note) Tj
+T*
+() Tj
+T*
+(The backend test suite was run with ./venv/bin/pytest -q, and all 26 tests passed.) Tj
+ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 18 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 16 0 R >>
+endobj
+18 0 obj
+<< /Type /Pages /Kids [ 3 0 R 5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R ] /Count 8 >>
+endobj
+19 0 obj
+<< /Type /Catalog /Pages 18 0 R >>
+endobj
+xref
+0 20
+0000000000 65535 f 
+0000000015 00000 n 
+0000000085 00000 n 
+0000001095 00000 n 
+0000001222 00000 n 
+0000002935 00000 n 
+0000003062 00000 n 
+0000005316 00000 n 
+0000005443 00000 n 
+0000007701 00000 n 
+0000007828 00000 n 
+0000009776 00000 n 
+0000009905 00000 n 
+0000011695 00000 n 
+0000011824 00000 n 
+0000013375 00000 n 
+0000013504 00000 n 
+0000015308 00000 n 
+0000015437 00000 n 
+0000015543 00000 n 
+trailer
+<< /Size 20 /Root 19 0 R >>
+startxref
+15594
+%%EOF

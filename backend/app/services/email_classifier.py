@@ -9,12 +9,39 @@ COMMON_ATS_DOMAINS = [
     "smartrecruiters"
 ]
 
+RECRUITER_CONTACT_SIGNALS = [
+    "recruiter",
+    "talent acquisition",
+    "sourcer",
+    "would love to connect",
+    "introductory call",
+]
+
+ASSESSMENT_SIGNALS = [
+    "assessment",
+    "coding challenge",
+    "take-home",
+    "hackerrank",
+    "codility",
+    "skill assessment",
+]
+
+FINAL_INTERVIEW_SIGNALS = [
+    "final interview",
+    "final round",
+    "last interview",
+    "meet with the hiring manager",
+    "panel interview",
+]
+
 INTERVIEW_SIGNALS = [
     "schedule an interview",
     "invite you to interview",
     "interview with our team",
     "interview availability",
-    "technical interview"
+    "technical interview",
+    "phone screen",
+    "screening call",
 ]
 
 OFFER_SIGNALS = [
@@ -31,6 +58,23 @@ REJECTION_SIGNALS = [
     "unfortunately"
 ]
 
+WITHDRAWN_SIGNALS = [
+    "application withdrawn",
+    "you withdrew",
+    "withdrawn from consideration",
+    "withdraw your application",
+]
+
+STATUS_SIGNALS = [
+    ("Withdrawn", WITHDRAWN_SIGNALS),
+    ("Offer", OFFER_SIGNALS),
+    ("Rejected", REJECTION_SIGNALS),
+    ("Final Interview", FINAL_INTERVIEW_SIGNALS),
+    ("Interview", INTERVIEW_SIGNALS),
+    ("Assessment", ASSESSMENT_SIGNALS),
+    ("Recruiter Contact", RECRUITER_CONTACT_SIGNALS),
+]
+
 
 def classify_email(email):
 
@@ -39,17 +83,10 @@ def classify_email(email):
         email.get("body","")
     ).lower()
 
-    for phrase in OFFER_SIGNALS:
-        if phrase in text:
-            return "Offer"
-
-    for phrase in INTERVIEW_SIGNALS:
-        if phrase in text:
-            return "Interview"
-
-    for phrase in REJECTION_SIGNALS:
-        if phrase in text:
-            return "Rejected"
+    for status, phrases in STATUS_SIGNALS:
+        for phrase in phrases:
+            if phrase in text:
+                return status
 
     return "Applied"
 

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Job Application Tracker - Mentor Walkthrough</title>
+  <style>
+    body {
+      font-family: "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.45;
+      color: #1f2937;
+      margin: 40px;
+      max-width: 900px;
+    }
+
+    h1, h2, h3 {
+      color: #0f172a;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin-top: 28px;
+      border-bottom: 1px solid #d1d5db;
+      padding-bottom: 6px;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin-top: 18px;
+      margin-bottom: 6px;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    ul {
+      margin: 8px 0 12px 24px;
+    }
+
+    li {
+      margin: 4px 0;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Menlo, monospace;
+      background: #f3f4f6;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    .intro {
+      color: #475569;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Job Application Tracker</h1>
+  <p class="intro">Mentor walkthrough of the project for a senior Computer Science student with an AI concentration.</p>
+
+  <h2>1. Project Overview</h2>
+  <p>This project is a full-stack job application tracker with two input paths: manual entry and automatic extraction from Outlook email. The goal is to keep a single source of truth for applications and reduce the manual work of updating statuses as recruiters and ATS systems send messages.</p>
+  <p>At a high level, the architecture is:</p>
+  <ul>
+    <li>React/Next.js frontend for the dashboard UI</li>
+    <li>FastAPI backend for REST endpoints and email ingestion</li>
+    <li>SQLite database for persistence</li>
+    <li>Microsoft Graph API for reading Outlook mail</li>
+    <li>OpenAI plus regex parsing for extracting job details from emails</li>
+  </ul>
+  <p>The runtime flow is:</p>
+  <ul>
+    <li>The frontend loads the dashboard from <code>frontend/src/app/page.tsx</code>.</li>
+    <li>It calls the backend through <code>frontend/src/lib/api.ts</code>.</li>
+    <li>The backend starts in <code>backend/app/main.py</code>, mounts CRUD routes from <code>backend/app/routes.py</code>, and creates tables from models in <code>backend/app/models.py</code>.</li>
+    <li>Application records are stored in SQLite using SQLAlchemy configured in <code>backend/app/database.py</code>.</li>
+    <li>If email sync is triggered, the backend authenticates with Microsoft, fetches messages, filters likely job mail, parses details, deduplicates by a generated <code>job_key</code>, then inserts or updates rows.</li>
+  </ul>
+  <p>The code is organized around layers:</p>
+  <ul>
+    <li>API layer: <code>main.py</code>, <code>routes.py</code></li>
+    <li>Data layer: <code>database.py</code>, <code>models.py</code>, <code>schemas.py</code></li>
+    <li>Business logic: <code>services/application_service.py</code></li>
+    <li>Email pipeline: <code>email_service.py</code>, <code>job_detector.py</code>, <code>ai_email_parser.py</code>, <code>email_parser.py</code>, <code>email_classifier.py</code></li>
+  </ul>
+
+  <h2>2. Technology Breakdown</h2>
+  <ul>
+    <li><strong>Python:</strong> backend language. Good for APIs, automation, AI integrations, and quick iteration. Trade-off: not as strong as C# for compile-time guarantees.</li>
+    <li><strong>FastAPI:</strong> modern Python web framework. It gives route definitions, validation, JSON serialization, and auto docs with little boilerplate. Trade-off: smaller batteries-included ecosystem than Django.</li>
+    <li><strong>React plus Next.js:</strong> frontend stack. React handles component-based UI; Next.js provides project structure, bundling, dev server, and deployment-friendly conventions. Trade-off: more JavaScript ecosystem complexity.</li>
+    <li><strong>TypeScript:</strong> adds static typing to frontend code. Useful for reducing UI and API mismatch bugs.</li>
+    <li><strong>SQLite:</strong> embedded relational database stored in a file. Perfect for a small local app with simple deployment. Trade-off: limited concurrency and horizontal scaling.</li>
+    <li><strong>SQLAlchemy:</strong> ORM for Python. It maps classes to database tables and hides a lot of raw SQL. Trade-off: abstraction can make debugging generated queries harder.</li>
+    <li><strong>REST APIs:</strong> the frontend talks to the backend over HTTP using JSON. Simple and standard for web apps.</li>
+    <li><strong>Microsoft Graph API:</strong> lets the app read Outlook messages after OAuth login. This is how email ingestion works.</li>
+    <li><strong>OAuth plus MSAL:</strong> handles Microsoft sign-in and access tokens. Important because the app should never directly handle your Microsoft password.</li>
+    <li><strong>OpenAI API:</strong> used in <code>backend/app/services/ai_email_parser.py</code> to extract company, role, location, and status from messy email text.</li>
+    <li><strong>Bash and terminal tools:</strong> used for setup, running servers, tests, and dependency management.</li>
+    <li><strong>Git:</strong> version control for tracking changes and collaborating safely.</li>
+  </ul>
+
+  <h2>3. Key Design Decisions</h2>
+  <ul>
+    <li><strong>Python backend:</strong> likely chosen because this project mixes API work, text parsing, and AI integration. Python is especially strong there.</li>
+    <li><strong>FastAPI over Flask or Django:</strong> FastAPI gives cleaner typing and validation than Flask, while staying lighter than Django. Good middle ground.</li>
+    <li><strong>React and Next.js frontend:</strong> strong ecosystem, reusable components, and industry relevance. It also teaches modern frontend patterns.</li>
+    <li><strong>SQLite over PostgreSQL or MySQL:</strong> fastest way to get persistence without running a separate database server.</li>
+    <li><strong>SQLAlchemy ORM:</strong> helpful because the app has structured relational data but still benefits from Python objects and query abstraction.</li>
+    <li><strong>Service-layer business logic:</strong> routes stay thin, while logic lives in services like <code>backend/app/services/application_service.py</code>. That is a good maintainability choice.</li>
+    <li><strong>Terminal-heavy workflow:</strong> common because it is scriptable, reproducible, fast, and works the same on local machines and servers.</li>
+  </ul>
+
+  <h2>4. Alternative Implementations</h2>
+  <h3>Backend alternatives</h3>
+  <ul>
+    <li><strong>C#:</strong> you would likely use ASP.NET Core plus Entity Framework. Strong typing, excellent tooling, great for larger enterprise systems.</li>
+    <li><strong>Java:</strong> probably Spring Boot plus JPA or Hibernate. Very production-proven, but heavier and more verbose.</li>
+    <li><strong>Node.js:</strong> Express or NestJS would keep frontend and backend both in JavaScript or TypeScript. Nice stack consistency, but less pleasant for some data and AI tasks.</li>
+    <li><strong>Go:</strong> simpler deployment and strong performance, but less ergonomic for rapid AI or text-processing work.</li>
+  </ul>
+  <h3>Frontend alternatives</h3>
+  <ul>
+    <li><strong>Angular:</strong> more opinionated, bigger framework, great structure, steeper learning curve.</li>
+    <li><strong>Vue:</strong> often easier to learn than React, very productive for small and medium apps.</li>
+    <li><strong>Svelte:</strong> very clean developer experience, less ecosystem depth than React.</li>
+    <li><strong>Server-rendered HTML:</strong> simpler for small apps, but less dynamic for an interactive dashboard.</li>
+  </ul>
+  <h3>Database alternatives</h3>
+  <ul>
+    <li><strong>PostgreSQL:</strong> best next step for production. Better concurrency, indexing, extensions, and reliability.</li>
+    <li><strong>MySQL:</strong> similar category, widely used.</li>
+    <li><strong>MongoDB:</strong> useful if the data were document-shaped and schema-flexible, less ideal here because applications fit relational structure well.</li>
+    <li><strong>Redis:</strong> not a primary database here; better as a cache or queue helper.</li>
+  </ul>
+  <h3>ORM alternatives</h3>
+  <ul>
+    <li><strong>Raw SQL:</strong> maximum control, more manual work.</li>
+    <li><strong>Prisma:</strong> common in TypeScript ecosystems, not Python.</li>
+    <li><strong>Django ORM:</strong> excellent if the backend were Django.</li>
+    <li><strong>Entity Framework:</strong> the closest C# analogy to SQLAlchemy.</li>
+  </ul>
+  <p>ORMs exist because they map tables to objects, reduce repetitive SQL boilerplate, centralize schema logic, and improve developer speed for common CRUD tasks.</p>
+
+  <h2>5. Development Workflow</h2>
+  <p>Typical local workflow:</p>
+  <ul>
+    <li>Backend setup: <code>cd backend</code>, create a virtual environment, <code>pip install -r requirements.txt</code>, run <code>uvicorn app.main:app --reload</code></li>
+    <li>Frontend setup: <code>cd frontend</code>, <code>npm install</code>, <code>npm run dev</code></li>
+    <li>Tests: <code>./venv/bin/pytest -q</code></li>
+  </ul>
+  <p>Why terminal workflows matter:</p>
+  <ul>
+    <li>They are fast once learned</li>
+    <li>They can be automated in scripts and CI</li>
+    <li>They work consistently across local, server, and cloud environments</li>
+    <li>They expose the real commands that build and run software</li>
+  </ul>
+  <p>Compared to GUI tools, the terminal has a steeper learning curve, but much more automation power.</p>
+
+  <h2>6. What Could Be Improved</h2>
+  <ul>
+    <li>Auth persistence and security: access tokens are stored in process memory and in SQLite, which is convenient but not ideal for production.</li>
+    <li>Pydantic v2 cleanup: tests show deprecated <code>dict()</code> and <code>orm_mode</code> usage.</li>
+    <li>Better validation: statuses and input fields could be more strictly constrained.</li>
+    <li>Logging and observability: current logging is basic and local-file oriented.</li>
+    <li>Background jobs: email sync currently runs inline in request handlers.</li>
+    <li>More tests: backend is well covered, but frontend tests are missing.</li>
+    <li>Config separation: environment-specific config could be cleaner.</li>
+  </ul>
+
+  <h2>7. Scaling the System</h2>
+  <p>If this needed thousands or millions of users:</p>
+  <ul>
+    <li>Replace SQLite with PostgreSQL</li>
+    <li>Put backend and frontend in containers with Docker</li>
+    <li>Deploy behind load balancers</li>
+    <li>Move email sync to background workers</li>
+    <li>Add a queue like RabbitMQ, SQS, or Redis-based workers</li>
+    <li>Store secrets in a proper secret manager</li>
+    <li>Use caching for expensive reads</li>
+    <li>Add CI/CD pipelines</li>
+    <li>Consider splitting services only if the monolith becomes a bottleneck</li>
+  </ul>
+  <p>Right now this is a good small monolith. At scale, the ingestion pipeline is the first thing I would separate operationally.</p>
+
+  <h2>8. Industry Best Practices</h2>
+  <p>A production-grade version would usually include:</p>
+  <ul>
+    <li>Unit, integration, and frontend tests</li>
+    <li>Pull requests and code review</li>
+    <li>Linting, formatting, and type checks in CI</li>
+    <li>Structured logs, metrics, and tracing</li>
+    <li>Secret management with cloud tools, not only <code>.env</code></li>
+    <li>Staging and production environments</li>
+    <li>Safer auth and session handling</li>
+    <li>Migrations for schema changes instead of implicit table creation</li>
+  </ul>
+
+  <h2>9. Mini Practice Projects</h2>
+  <ul>
+    <li>Build one FastAPI endpoint that returns a list of books. Teaches routing, JSON responses, and request handling.</li>
+    <li>Build one React component with a search box filtering a list. Teaches state, props, and rendering.</li>
+    <li>Build a tiny Python script that inserts and reads rows from SQLite. Teaches persistence basics.</li>
+    <li>Write a bash script that starts backend and frontend dev servers. Teaches terminal automation.</li>
+    <li>Call a public REST API from Python or JavaScript and display the result. Teaches HTTP, JSON, and async flow.</li>
+  </ul>
+
+  <h2>10. Using AI Tools for Development</h2>
+  <p>AI tools can help a lot if used intentionally:</p>
+  <ul>
+    <li><strong>ChatGPT or Codex:</strong> good for explaining unfamiliar files, generating starter code, and comparing architecture options</li>
+    <li><strong>Cursor or Copilot:</strong> great for inline code completion and refactors</li>
+    <li><strong>Agents:</strong> useful for repetitive tasks like wiring CRUD or writing tests</li>
+  </ul>
+  <p>Good prompts are specific:</p>
+  <ul>
+    <li><code>Explain this file as if I know C# but not FastAPI</code></li>
+    <li><code>Trace the data flow from this button click to the database</code></li>
+    <li><code>Write tests for this service and explain the edge cases</code></li>
+    <li><code>Compare this SQLAlchemy model to the Entity Framework equivalent</code></li>
+  </ul>
+  <p>Best practice is to use AI to accelerate understanding and drafting, verify important code paths yourself, ask it to explain trade-offs, and treat it like a strong junior pair programmer rather than an infallible architect.</p>
+
+  <h2>Verification Note</h2>
+  <p>The backend test suite was run with <code>./venv/bin/pytest -q</code>, and all 26 tests passed.</p>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import os
+
 from msal import ConfidentialClientApplication
 from dotenv import load_dotenv
 
@@ -16,22 +17,31 @@ SCOPES = [
     "Mail.Read"
 ]
 
-app = ConfidentialClientApplication(
-    CLIENT_ID,
-    authority=AUTHORITY,
-    client_credential=CLIENT_SECRET
-)
+_msal_app = None
+
+
+def get_msal_app():
+    global _msal_app
+
+    if _msal_app is None:
+        _msal_app = ConfidentialClientApplication(
+            CLIENT_ID,
+            authority=AUTHORITY,
+            client_credential=CLIENT_SECRET
+        )
+
+    return _msal_app
 
 
 def get_auth_url():
-    return app.get_authorization_request_url(
+    return get_msal_app().get_authorization_request_url(
         SCOPES,
         redirect_uri=REDIRECT_URI
     )
 
 
 def acquire_token_by_code(code):
-    result = app.acquire_token_by_authorization_code(
+    result = get_msal_app().acquire_token_by_authorization_code(
         code,
         scopes=SCOPES,
         redirect_uri=REDIRECT_URI

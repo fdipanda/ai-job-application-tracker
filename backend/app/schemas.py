@@ -32,3 +32,14 @@ class Application(ApplicationBase):
 
     class Config:
         orm_mode = True
+
+
+class EmailSyncSummary(BaseModel):
+    scanned_count: int
+    detected_count: int
+    added_count: int
+    updated_count: int
+    skipped_count: int
+    write_failures: int
+    checkpoint_at: Optional[datetime] = None
+    last_run_status: str
