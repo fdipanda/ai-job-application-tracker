@@ -28,3 +28,13 @@ def save_access_token(db: Session, access_token: str, provider: str = OUTLOOK_PR
     db.commit()
     db.refresh(auth_state)
     return auth_state
+
+
+def clear_access_token(db: Session, provider: str = OUTLOOK_PROVIDER) -> None:
+    auth_state = db.query(AuthState).filter(AuthState.provider == provider).first()
+    if not auth_state:
+        return
+
+    auth_state.access_token = None
+    auth_state.updated_at = datetime.utcnow()
+    db.commit()

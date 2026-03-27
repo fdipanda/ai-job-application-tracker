@@ -24,6 +24,25 @@ NEGATIVE_KEYWORDS = [
     "promotion",
 ]
 
+NEWSLETTER_SIGNALS = [
+    "weekly digest",
+    "blog",
+    "blog post",
+    "newsletter",
+    "unsubscribe",
+    "view in browser",
+    "top stories",
+    "community update",
+    "upcoming events",
+    "read more",
+]
+
+NON_APPLICATION_PLATFORM_SIGNALS = [
+    "leetcode",
+    "dev.to",
+    "medium digest",
+]
+
 CONSULTING_ADMIN_SIGNALS = [
     "timesheet",
     "week ending",
@@ -79,6 +98,13 @@ def classify_job_email(email):
                 "reason": f"consulting_admin:{phrase}",
             }
 
+    if _is_newsletter_or_marketing_email(sender, text):
+        return {
+            "is_job_email": False,
+            "stage": "filtered",
+            "reason": "newsletter_or_marketing",
+        }
+
     for phrase in NEGATIVE_KEYWORDS:
         if phrase in text:
             return {
@@ -112,3 +138,14 @@ def classify_job_email(email):
 
 def is_job_email(email):
     return classify_job_email(email)["is_job_email"]
+
+
+def _is_newsletter_or_marketing_email(sender, text):
+    has_newsletter_signal = any(phrase in text for phrase in NEWSLETTER_SIGNALS)
+    has_platform_signal = any(phrase in sender or phrase in text for phrase in NON_APPLICATION_PLATFORM_SIGNALS)
+    has_application_signal = any(phrase in text for phrase in APPLICATION_SIGNALS)
+
+    if has_platform_signal and not has_application_signal:
+        return True
+
+    return has_newsletter_signal and not has_application_signal

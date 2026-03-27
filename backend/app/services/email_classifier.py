@@ -9,21 +9,72 @@ COMMON_ATS_DOMAINS = [
     "smartrecruiters"
 ]
 
-RECRUITER_CONTACT_SIGNALS = [
+RECRUITER_TITLE_SIGNALS = [
     "recruiter",
     "talent acquisition",
+    "talent team",
+    "talent partner",
     "sourcer",
-    "would love to connect",
-    "introductory call",
 ]
 
-ASSESSMENT_SIGNALS = [
-    "assessment",
-    "coding challenge",
-    "take-home",
+RECRUITER_OUTREACH_SIGNALS = [
+    "would love to connect",
+    "love to connect",
+    "introductory call",
+    "schedule a call",
+    "book a call",
+    "request a call",
+    "connect with you",
+    "connect regarding",
+    "reach out regarding",
+    "reach out about",
+    "discuss your background",
+    "discuss your experience",
+    "learn more about your background",
+    "next-step discussion",
+]
+
+ASSESSMENT_ACTION_SIGNALS = [
+    "complete this assessment",
+    "complete the assessment",
+    "complete your assessment",
+    "take the assessment",
+    "begin the assessment",
+    "start the assessment",
+    "complete this coding challenge",
+    "complete the coding challenge",
+    "complete your coding challenge",
+    "complete the hackerrank",
+    "complete the codility",
+    "take-home assignment",
+    "take home assignment",
+    "please complete",
+]
+
+ASSESSMENT_PLATFORM_SIGNALS = [
     "hackerrank",
     "codility",
+    "codesignal",
+    "testgorilla",
+    "qualified.io",
+    "take-home",
+    "take home",
+    "coding challenge",
     "skill assessment",
+]
+
+FUTURE_ASSESSMENT_SIGNALS = [
+    "may be sent",
+    "may receive",
+    "you may receive",
+    "may ask you",
+    "if selected",
+    "if you are selected",
+    "next step may include",
+    "next steps may include",
+    "you may be invited",
+    "we may invite you",
+    "in the next step",
 ]
 
 FINAL_INTERVIEW_SIGNALS = [
@@ -55,7 +106,26 @@ REJECTION_SIGNALS = [
     "not moving forward",
     "after careful consideration",
     "we regret to inform you",
-    "unfortunately"
+    "unfortunately",
+    "pursue other candidates",
+    "decided not to move forward",
+    "move forward with other candidates",
+    "moving forward with other candidates",
+    "filled the job with a candidate whose qualifications more closely align",
+    "will not be able to explore this role further",
+    "we have decided to pursue other candidates",
+]
+
+APPLIED_CONFIRMATION_SIGNALS = [
+    "we've received your application",
+    "we have received your application",
+    "thank you for your application",
+    "thank you for applying",
+    "application received",
+    "your application for",
+    "we have successfully received your application",
+    "we are currently reviewing your application",
+    "thanks for applying",
 ]
 
 WITHDRAWN_SIGNALS = [
@@ -71,22 +141,26 @@ STATUS_SIGNALS = [
     ("Rejected", REJECTION_SIGNALS),
     ("Final Interview", FINAL_INTERVIEW_SIGNALS),
     ("Interview", INTERVIEW_SIGNALS),
-    ("Assessment", ASSESSMENT_SIGNALS),
-    ("Recruiter Contact", RECRUITER_CONTACT_SIGNALS),
 ]
 
 
 def classify_email(email):
 
-    text = (
-        email.get("subject","") +
-        email.get("body","")
-    ).lower()
+    text = _email_text(email)
 
     for status, phrases in STATUS_SIGNALS:
         for phrase in phrases:
             if phrase in text:
                 return status
+
+    if _is_assessment_email(text):
+        return "Assessment"
+
+    if _contains_any(text, APPLIED_CONFIRMATION_SIGNALS):
+        return "Applied"
+
+    if _is_recruiter_contact_email(text):
+        return "Recruiter Contact"
 
     return "Applied"
 
@@ -114,3 +188,63 @@ def extract_company(email):
         return domain.capitalize()
 
     return "Unknown Company"
+
+
+def _email_text(email):
+    return (
+        email.get("subject", "")
+        + " "
+        + email.get("preview", "")
+        + " "
+        + email.get("body", "")
+    ).lower()
+
+
+def _contains_any(text, phrases):
+    return any(phrase in text for phrase in phrases)
+
+
+def _is_assessment_email(text):
+    has_platform_or_assessment = _contains_any(text, ASSESSMENT_PLATFORM_SIGNALS) or "assessment" in text
+    if not has_platform_or_assessment:
+        return False
+
+    if _contains_any(text, FUTURE_ASSESSMENT_SIGNALS):
+        return False
+
+    if _contains_any(text, ASSESSMENT_ACTION_SIGNALS):
+        return True
+
+    return any(
+        phrase in text
+        for phrase in [
+            "please use the link below to complete",
+            "complete within",
+            "submit your take-home",
+            "access your assessment",
+            "assessment link",
+        ]
+    )
+
+
+def _is_recruiter_contact_email(text):
+    if _contains_any(text, APPLIED_CONFIRMATION_SIGNALS):
+        return False
+
+    has_outreach_signal = _contains_any(text, RECRUITER_OUTREACH_SIGNALS)
+    has_recruiter_context = _contains_any(text, RECRUITER_TITLE_SIGNALS)
+
+    if has_outreach_signal:
+        return True
+
+    return has_recruiter_context and any(
+        phrase in text
+        for phrase in [
+            "let's connect",
+            "lets connect",
+            "schedule time",
+            "available for a call",
+            "speak with you",
+            "chat about your background",
+        ]
+    )

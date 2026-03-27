@@ -42,6 +42,7 @@ def client(db_session):
     from fastapi.testclient import TestClient
     import app.main as main
     import app.routes as routes
+    from app.services.backlog_job_service import BacklogJobStore
 
     # override DB dependency used by routes.get_db
     def override_get_db():
@@ -54,5 +55,12 @@ def client(db_session):
 
     # ensure tables exist on the test session's bind
     Base.metadata.create_all(bind=db_session.bind)
+    main.ACCESS_TOKEN = None
+    main.BACKLOG_JOB_STORE = BacklogJobStore()
+    # Keep auth-related tests isolated from any real local SQLite auth state.
+    # Individual tests can still monkeypatch this if they need a different behavior.
+    main.get_access_token = lambda db: None
+    if main.EMAIL_SYNC_LOCK.locked():
+        main.EMAIL_SYNC_LOCK.release()
 
     return TestClient(main.app)

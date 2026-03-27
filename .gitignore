@@ -1,0 +1,39 @@
+.DS_Store
+
+# Python environments and caches
+venv/
+backend/venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/tsconfig.tsbuildinfo
+
+# Local environment files
+backend/app/.env
+.env
+.env.*
+
+# Local SQLite databases and journals
+*.db
+*.db-shm
+*.db-wal
+
+# Generated logs and audit artifacts
+email_debug.json
+backend/email_debug.json
+frontend/email_debug.json
+backend/audit/
+frontend/audit/
+
+# Local review/export files
+email_audit_prefilled.csv
+email_audit_prefilled.xlsx
+email_audit_template.csv
+manual_audit.csv
+mentor_project_walkthrough.html
+mentor_project_walkthrough.pdf
+

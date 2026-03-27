@@ -1,10 +1,11 @@
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 from types import SimpleNamespace
 
 from app.services import email_service
 from app.services import sync_state_service
-from app.models import SyncState
+from app.models import Application, SyncState
 from sqlalchemy.exc import OperationalError
 import requests
 
@@ -60,6 +61,9 @@ def test_process_backlog_respects_require_complete_parse(monkeypatch, db_session
 
 
 def test_process_backlog_recreates_debug_log_and_skips_filtered_messages(monkeypatch, db_session, tmp_path):
+    db_session.query(Application).delete()
+    db_session.commit()
+
     messages = [
         {
             "subject": "Your Timesheet Received",
@@ -92,18 +96,47 @@ def test_process_backlog_recreates_debug_log_and_skips_filtered_messages(monkeyp
     debug_log_path = backend_dir / "email_debug.json"
     debug_log_path.write_text("old log contents")
 
+    monkeypatch.setattr(
+        email_service,
+        "_resolve_debug_log_path",
+        lambda: debug_log_path,
+    )
     monkeypatch.chdir(backend_dir)
 
     result = email_service.process_backlog_emails("token", max_pages=1)
 
     log_lines = debug_log_path.read_text().strip().splitlines()
     assert result["applications_processed"] == 1
-    assert len(log_lines) == 1
+    assert result["debug_log_path"] == str(debug_log_path)
+    assert result["debug_run_id"] == result["run_id"]
+    assert len(log_lines) == 2
 
-    log_entry = json.loads(log_lines[0])
+    filtered_entry = json.loads(log_lines[0])
+    assert filtered_entry["email_id"] == "filtered-1"
+    assert filtered_entry["action_taken"] == "skipped"
+    assert filtered_entry["stage"] == "skipped"
+
+    log_entry = json.loads(log_lines[1])
     assert log_entry["email_id"] == "job-1"
     assert log_entry["stage"] == "persisted"
+    assert log_entry["action_taken"] in {"created", "updated"}
     assert log_entry["run_id"] == result["debug_run_id"]
+    assert log_entry["sync_type"] == "backlog"
+    assert log_entry["email_subject"] == "Thanks for applying to Acme"
+    assert log_entry["sender_email"] == "jobs@acme.com"
+    assert log_entry["email_received_at"] == "2026-03-08T00:01:00Z"
+    assert log_entry["detector_reason"] is not None
+    assert log_entry["parser_used"] == "ai"
+    assert log_entry["parsed_company"] == "Acme"
+    assert log_entry["parsed_role"] == "Backend Engineer"
+    assert log_entry["parsed_location"] is None
+    assert log_entry["parsed_status"] == "Applied"
+    assert log_entry["matched_application_id"] is not None
+    assert log_entry["resulting_date_applied"] == "2026-03-08T00:01:00"
+    assert log_entry["failure_reason"] is None
+
+    audit_lines = Path(result["audit_log_path"]).read_text().strip().splitlines()
+    assert len(audit_lines) == 2
 
 
 def test_process_backlog_records_write_failures_without_crashing(monkeypatch, db_session, tmp_path):
@@ -126,14 +159,23 @@ def test_process_backlog_records_write_failures_without_crashing(monkeypatch, db
 
     backend_dir = tmp_path / "backend"
     backend_dir.mkdir()
+    debug_log_path = backend_dir / "email_debug.json"
+    monkeypatch.setattr(
+        email_service,
+        "_resolve_debug_log_path",
+        lambda: debug_log_path,
+    )
     monkeypatch.chdir(backend_dir)
 
     result = email_service.process_backlog_emails("token", max_pages=1)
 
-    log_lines = (backend_dir / "email_debug.json").read_text().strip().splitlines()
+    log_lines = debug_log_path.read_text().strip().splitlines()
     assert result["write_failures"] == 1
     assert len(log_lines) == 1
-    assert json.loads(log_lines[0])["stage"] == "db_write_failed"
+    log_entry = json.loads(log_lines[0])
+    assert log_entry["stage"] == "db_write_failed"
+    assert log_entry["action_taken"] == "write_failed"
+    assert log_entry["failure_reason"] == "OperationalError"
 
 
 def test_process_new_emails_uses_checkpoint_and_updates_sync_state(monkeypatch, db_session):
@@ -183,6 +225,8 @@ def test_process_new_emails_uses_checkpoint_and_updates_sync_state(monkeypatch, 
     assert result["write_failures"] == 0
     assert refreshed.last_run_status == "success"
     assert refreshed.last_email_received_at == datetime(2026, 3, 10, 12, 0)
+    assert result["debug_run_id"] == result["run_id"]
+    assert result["debug_log_path"].endswith("email_debug.json")
 
 
 def test_process_new_emails_reports_write_failures_without_advancing_checkpoint(monkeypatch, db_session):

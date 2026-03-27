@@ -1,78 +1,33 @@
 # AI Job Application Tracker
 
-AI Job Application Tracker is a small full-stack app for managing job applications manually and automatically extracting application activity from Outlook email.
+AI Job Application Tracker is a full-stack application for managing job applications manually and automatically extracting application activity from Outlook email.
 
-The project has two halves:
+The project started as a personal workflow tool, but it became a stronger portfolio piece because it combines:
+- a React/Next.js dashboard
+- a FastAPI backend
+- Microsoft OAuth + Graph API integration
+- AI-assisted parsing with a deterministic regex fallback
+- manual auditing of classifier accuracy and follow-up rule improvements
 
-- A FastAPI backend that stores applications in SQLite and processes Outlook email.
-- A Next.js frontend that lets you view, add, update, filter, and delete applications.
+## What It Does
 
-## Architecture
+- Track job applications manually from a web dashboard
+- Update application stages such as `Applied`, `Interview`, `Offer`, and `Rejected`
+- Connect to Outlook and scan inbox messages for job-related activity
+- Parse company, role, location, and status from emails
+- Deduplicate email-derived records using a normalized `job_key`
+- Support both incremental sync and historical backlog processing
+- Preserve email provenance for auditing: subject, sender, and received timestamp
 
-The system is organized as a simple client/server app with one persistent data store.
-
-```text
-Next.js frontend
-  -> calls REST API
-
-FastAPI backend
-  -> CRUD for applications
-  -> Outlook OAuth + Microsoft Graph email fetch
-  -> incremental email sync + backlog sync
-  -> AI + regex parsing of job emails
-  -> SQLAlchemy persistence
-
-SQLite
-  -> applications table
-  -> sync_state table
-  -> auth_state table
-```
-
-### Backend flow
-
-The backend lives in `backend/app/`.
-
-- `main.py` boots FastAPI, enables CORS for `http://localhost:3000`, creates database tables, and exposes API and auth endpoints.
-- `routes.py` contains the core CRUD endpoints for job applications.
-- `database.py` configures SQLAlchemy and the SQLite connection.
-- `models.py` defines the `Application` database model.
-- `schemas.py` defines the Pydantic request and response models.
-
-The backend also includes an email-ingestion pipeline:
-
-- `services/outlook_auth.py` handles Microsoft OAuth using MSAL.
-- `services/auth_state_service.py` persists the latest Outlook access token in SQLite.
-- `services/email_service.py` fetches messages from Microsoft Graph and processes them.
-- `services/job_detector.py` filters likely job-related emails using keywords and blocked senders.
-- `services/ai_email_parser.py` uses the OpenAI API to extract company, role, location, and status from email content.
-- `services/email_parser.py` provides a regex-based fallback parser.
-- `services/email_classifier.py` classifies email stage such as `Applied`, `Interview`, `Offer`, or `Rejected`.
-- `services/application_service.py` deduplicates and upserts records using a normalized `job_key`, and only advances status when the new status is further along in the pipeline.
-- `services/sync_state_service.py` stores checkpoint state for incremental email scans.
-
-### Frontend flow
-
-The frontend lives in `frontend/` and uses the Next.js App Router.
-
-- `src/app/page.tsx` is the main dashboard page.
-- `src/components/AddApplicationForm.tsx` handles manual application creation.
-- `src/components/ApplicationCard.tsx` renders individual applications and supports status changes and deletion.
-- `src/lib/api.ts` wraps calls to the backend API.
-- `src/lib/types.ts` defines the frontend `Application` type.
-
-The frontend loads all applications from the backend, then applies search, filter, sort, and summary counts client-side.
-
-## Technologies Used
+## Tech Stack
 
 ### Frontend
-
 - Next.js 16
 - React 19
 - TypeScript
 - Tailwind CSS 4
 
 ### Backend
-
 - FastAPI
 - SQLAlchemy 2
 - Pydantic
@@ -80,85 +35,128 @@ The frontend loads all applications from the backend, then applies search, filte
 - SQLite
 - Requests
 - MSAL for Microsoft authentication
-- OpenAI API for AI-assisted email parsing
+- OpenAI API for AI-assisted parsing
 - `python-dotenv` for local environment variables
 
-## Data Model
+### Testing
+- `pytest`
+- FastAPI `TestClient`
+- focused backend tests around CRUD, ingestion, provenance, and backlog jobs
 
-The main persisted entity is an application record with fields such as:
+## Architecture
 
-- `company`
-- `role`
-- `status`
-- `job_key`
-- `location`
-- `application_link`
-- `notes`
-- `date_applied`
-- `last_updated`
+At a high level, the system is a client/server application with one main persistent store and two ingestion paths.
 
-The current app uses a single SQLite database file:
+```text
+Next.js frontend
+  -> calls REST API
+  -> shows dashboard, auth state, sync status, backlog progress
 
-- `backend/applications.db`
+FastAPI backend
+  -> CRUD for applications
+  -> Outlook OAuth + Microsoft Graph email fetch
+  -> incremental sync + backlog processing
+  -> AI parsing + regex fallback
+  -> application upsert and status progression rules
 
-It currently stores three tables:
+SQLite
+  -> applications
+  -> sync_state
+  -> auth_state
+```
 
-- `applications` for tracked job applications
-- `sync_state` for incremental email scan checkpoints
-- `auth_state` for persisted Outlook auth state
+### End-to-End Data Flow
 
-## API Overview
+1. The frontend loads the dashboard and requests the current application list.
+2. The backend returns persisted application records from SQLite.
+3. The user can manually create/update/delete records through REST endpoints.
+4. If Outlook is connected, the frontend can trigger:
+   - `Scan New Emails` for incremental sync
+   - `Process Backlog` for historical scanning
+5. The backend fetches messages from Microsoft Graph.
+6. Messages are filtered for likely job-related content.
+7. The parser tries AI extraction first, then falls back to regex parsing if needed.
+8. The application service deduplicates or updates existing rows and only advances status forward.
+9. Audit/debug files are written for inspection of ingestion behavior.
 
-Core CRUD endpoints:
+### Backend Structure
 
-- `GET /applications`
-- `POST /applications`
-- `GET /applications/{id}`
-- `PUT /applications/{id}`
-- `DELETE /applications/{id}`
+The backend lives in `backend/app/`.
 
-Email and auth endpoints:
+- `main.py`: FastAPI app bootstrap, auth routes, sync routes, backlog job endpoints
+- `routes.py`: CRUD endpoints for applications
+- `database.py`: SQLAlchemy engine/session setup and SQLite schema checks
+- `models.py`: ORM models for `Application`, `SyncState`, and `AuthState`
+- `schemas.py`: request/response DTOs
 
-- `GET /auth/login`
-- `GET /auth/callback`
-- `GET /emails`
-- `GET /process-backlog`
-- `POST /emails/sync-new`
+Key services:
+- `services/application_service.py`: normalization, dedupe, status progression, provenance merge
+- `services/email_service.py`: Outlook message fetch + email ingestion pipeline
+- `services/backlog_job_service.py`: in-memory tracking for long-running backlog jobs
+- `services/job_detector.py`: job-email filtering
+- `services/email_classifier.py`: status classification
+- `services/ai_email_parser.py`: OpenAI-based parsing
+- `services/email_parser.py`: regex fallback parsing
+- `services/outlook_auth.py`: Microsoft OAuth flow with MSAL
+- `services/sync_state_service.py`: incremental sync checkpoints
 
-## Setup
+### Frontend Structure
+
+The frontend lives in `frontend/` and uses the Next.js App Router.
+
+- `src/app/page.tsx`: page-level orchestration for dashboard data, auth state, sync state, and backlog polling
+- `src/components/AddApplicationForm.tsx`: manual application creation
+- `src/components/ApplicationCard.tsx`: application display, status update, and deletion
+- `src/lib/api.ts`: frontend API wrapper
+- `src/lib/types.ts`: shared frontend types
+- `src/lib/status.ts`: status ordering, filters, and display helpers
+
+## Testing Narrative
+
+This project includes backend tests to validate both standard CRUD behavior and the more interesting email-ingestion logic.
+
+The current test suite covers:
+- application CRUD behavior
+- not-found/validation cases
+- job email classification
+- AI parser fallback behavior
+- backlog job lifecycle and progress reporting
+- provenance persistence for email-derived rows
+- sync checkpoint behavior for incremental email scans
+
+One especially important part of the project was manual classifier auditing:
+- audited `Rejected`, `Assessment`, and `Recruiter Contact` labels
+- found `Rejected` precision was strong
+- found `Recruiter Contact` had many false positives
+- used those findings to guide tighter classification rules and future test cases
+
+To run the tests:
+
+```bash
+./venv/bin/pytest -q backend/tests tests
+```
+
+## Local Setup
 
 ### Prerequisites
 
-- Node.js 20+ recommended
+- Node.js 20+
 - npm
 - Python 3.9+
-- A Microsoft app registration with Outlook mail access
-- An OpenAI API key if you want AI-assisted email parsing
+- a Microsoft app registration for Outlook access if you want email sync
+- an OpenAI API key if you want AI-assisted parsing
 
-### 1. Clone the repository
+### Backend setup
 
-```bash
-git clone <your-repo-url>
-cd ai-job-application-tracker
-```
-
-### 2. Set up the backend
-
-Create and activate a virtual environment:
+Create a virtual environment and install dependencies:
 
 ```bash
-cd backend
 python3 -m venv venv
 source venv/bin/activate
+pip install -r backend/requirements.txt
 ```
 
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Create `backend/app/.env` with placeholder values like:
+Create `backend/app/.env`:
 
 ```env
 OUTLOOK_CLIENT_ID=your_outlook_client_id
@@ -166,98 +164,125 @@ OUTLOOK_TENANT_ID=your_outlook_tenant_id
 OUTLOOK_CLIENT_SECRET=your_outlook_client_secret
 OUTLOOK_REDIRECT_URI=http://localhost:8000/auth/callback
 OPENAI_API_KEY=your_openai_api_key
+FRONTEND_URL=http://localhost:3000
 ```
 
-Important:
-
-- Do not commit real secrets to source control.
-- If you only want manual application tracking, the email-related credentials are not needed until you use the Outlook endpoints.
-
-Start the backend server:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-The API will run at `http://localhost:8000`.
-
-### 3. Set up the frontend
-
-Open a new terminal:
+### Frontend setup
 
 ```bash
 cd frontend
 npm install
+cd ..
 ```
 
-Start the frontend:
+## Running the App
+
+### Option 1: one command launcher
+
+This repo includes a small launcher script that starts both services from one terminal:
 
 ```bash
+./scripts/start-dev.sh
+```
+
+It starts:
+- FastAPI on `http://localhost:8000`
+- Next.js on `http://localhost:3000`
+
+Press `Ctrl+C` once to stop both.
+
+### Option 2: run each service manually
+
+Backend:
+
+```bash
+./venv/bin/uvicorn app.main:app --reload --app-dir backend
+```
+
+Frontend:
+
+```bash
+cd frontend
 npm run dev
 ```
 
-The app will run at `http://localhost:3000`.
+## Core API Endpoints
 
-## Using the App
+### CRUD
+- `GET /applications`
+- `POST /applications`
+- `GET /applications/{id}`
+- `PUT /applications/{id}`
+- `DELETE /applications/{id}`
 
-### Manual tracking
+### Auth and email sync
+- `GET /auth/login`
+- `GET /auth/callback`
+- `GET /auth/status`
+- `POST /emails/sync-new`
+- `POST /emails/process-backlog`
+- `GET /emails/process-backlog/{job_id}`
 
-1. Start the backend.
-2. Start the frontend.
-3. Open `http://localhost:3000`.
-4. Add applications with the form.
-5. Update statuses or delete entries from the dashboard.
+## Why This Is More Than CRUD
 
-### Outlook email ingestion
+What makes this project interesting from an engineering perspective is the email-ingestion pipeline:
 
-1. Configure the backend `.env` with Outlook and OpenAI credentials.
-2. Start the backend.
-3. Open `http://localhost:8000/auth/login` to sign in with Microsoft.
-4. After authentication completes, call:
+- not every inbox message should become an application
+- parsed rows need deduplication
+- status should not move backward
+- AI extraction can fail and needs a fallback
+- email-derived data should remain auditable
+- backlog processing needs progress tracking and safe concurrency
 
-```text
-GET /emails
-```
+Those concerns drove the service-layer design and the test coverage.
 
-to fetch recent job-related messages, or:
+## Current Limitations
 
-```text
-GET /process-backlog
-```
+This is a strong local/portfolio app, but it is not fully production-ready yet.
 
-to scan more pages of historical mail and upsert detected applications.
-
-You can also call:
-
-```text
-POST /emails/sync-new
-```
-
-to incrementally scan only messages newer than the last successful sync checkpoint.
-The response includes:
-
-- `scanned_count`
-- `detected_count`
-- `added_count`
-- `updated_count`
-- `skipped_count`
-- `write_failures`
-- `checkpoint_at`
-- `last_run_status`
-
-## Notes and Limitations
-
-- The backend persists the Outlook access token in SQLite for convenience. This keeps auth across restarts, but it is not an encrypted credential store.
-- The frontend API base URL is hardcoded to `http://localhost:8000`.
-- Search, filter, and sorting happen in the client after fetching the full application list.
-- Email parsing uses heuristics plus AI and may still produce misses or false positives.
-- Backlog sync writes a newline-delimited JSON debug log to `backend/email_debug.json` for each run.
-- Email sync endpoints are guarded by an in-process lock, so only one sync can run at a time per backend process.
-- There are checked-in environment and local artifact files in the repo; those should ideally be cleaned up and ignored.
+- SQLite is convenient for local development, but Postgres would be better for deployment
+- Outlook tokens are stored for convenience, not in an encrypted secret store
+- backlog jobs are tracked in memory, so job state is not distributed/persistent across server instances
+- email parsing still relies on heuristics and can produce false positives/false negatives
+- search/filter/sort happen client-side after loading the full application list
+- email sync is serialized with an in-process lock
+- the project is optimized for local use and demoability rather than cloud-scale deployment
 
 ## Repository Structure
 
 ```text
+backend/
+  app/
+    main.py
+    routes.py
+    database.py
+    models.py
+    schemas.py
+    services/
+  requirements.txt
+
+frontend/
+  src/
+    app/
+    components/
+    lib/
+  package.json
+
+tests/
+backend/tests/
+scripts/
+  start-dev.sh
+```
+
+## Next Improvements
+
+If this were pushed further toward production, the next steps would be:
+- move SQLite to Postgres
+- add stronger token/security handling
+- add frontend/E2E tests
+- deploy frontend/backend separately
+- improve observability and structured logging
+- continue tightening classifier accuracy based on audit results
 .
 ├── backend
 │   ├── app

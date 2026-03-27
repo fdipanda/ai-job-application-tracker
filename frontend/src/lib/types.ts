@@ -51,4 +51,32 @@ export interface EmailSyncSummary {
   write_failures: number;
   checkpoint_at?: string | null;
   last_run_status: string;
+  audit_log_path?: string | null;
+  run_id?: string | null;
+}
+
+export interface BacklogJobStartResponse {
+  job_id: string;
+  status: "running" | "completed" | "failed";
+  max_pages: number;
+}
+
+export interface BacklogJobStatus {
+  job_id: string;
+  status: "running" | "completed" | "failed";
+  max_pages: number;
+  pages_processed: number;
+  emails_scanned: number;
+  applications_processed: number;
+  write_failures: number;
+  percent_complete: number;
+  elapsed_seconds: number;
+  eta_seconds?: number | null;
+  run_id?: string | null;
+  audit_log_path?: string | null;
+  error_message?: string | null;
+}
+
+export interface AuthStatus {
+  authenticated: boolean;
 }

@@ -20,6 +20,9 @@ class Application(Base):
     location: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     application_link: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    email_subject: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    sender_email: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    email_received_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     date_applied: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_updated: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

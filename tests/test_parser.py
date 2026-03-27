@@ -98,6 +98,20 @@ def test_job_detector_filters_timesheet_admin_mail():
     assert result["reason"].startswith("consulting_admin:")
 
 
+def test_job_detector_filters_newsletter_style_platform_email():
+    email = {
+        "subject": "LeetCode Weekly Digest",
+        "preview": "Top stories and practice picks for this week",
+        "body": "Read our latest blog post, community update, and upcoming events. Unsubscribe any time.",
+        "sender": "newsletter@leetcode.com",
+    }
+
+    result = classify_job_email(email)
+
+    assert result["is_job_email"] is False
+    assert result["reason"] == "newsletter_or_marketing"
+
+
 def test_regex_parser_trims_generic_company_fragments():
     parsed = parse_email(
         {

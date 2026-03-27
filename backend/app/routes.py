@@ -9,6 +9,8 @@ router = APIRouter()
 
 
 def get_db():
+    # FastAPI dependencies are similar to ASP.NET dependency injection.
+    # Each request gets a DB session, and FastAPI makes sure cleanup happens after the handler returns.
     db = SessionLocal()
     try:
         yield db
@@ -18,6 +20,7 @@ def get_db():
 
 @router.post("/applications", response_model=schemas.Application)
 def create_application(application: schemas.ApplicationCreate, db: Session = Depends(get_db)):
+    # Routes stay thin on purpose; business rules live in the service layer.
     return application_service.create_application(db, application.dict())
 
 
@@ -42,6 +45,8 @@ def update_application(application_id: int, update_data: schemas.ApplicationUpda
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
 
+    # exclude_unset=True means partial updates behave like PATCH-style DTO updates:
+    # only fields the client sent are applied.
     return application_service.update_application(
         db,
         application,
